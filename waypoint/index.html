@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WAYPOINT — Dynamic Community Mapping</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="public/manifest.json">
+  <meta name="theme-color" content="#0284c7">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Font Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: { 500: '#0284c7', 600: '#0369a1', 900: '#0c4a6e' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="src/css/main.css" />
+</head>
+<body class="bg-slate-900 text-slate-100 antialiased font-sans h-screen flex overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-80 lg:w-96 bg-slate-900 border-r border-slate-800 flex flex-col z-20 shrink-0 shadow-xl">
+    
+    <!-- App Header -->
+    <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center font-bold text-white shadow-md">
+          W
+        </div>
+        <div>
+          <h1 class="font-bold text-base tracking-tight leading-none text-white">WAYPOINT</h1>
+          <span class="text-xs text-slate-400">Offline-Ready GIS</span>
+        </div>
+      </div>
+      
+      <div id="user-badge" class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">
+        Guest
+      </div>
+    </div>
+
+    <!-- Auth Simulation -->
+    <div class="p-3 bg-slate-950/60 border-b border-slate-800 text-xs flex items-center justify-between">
+      <span id="login-status-text" class="text-slate-400">Unauthenticated Session</span>
+      <button id="auth-btn" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-medium border border-slate-700 transition">
+        Toggle Session
+      </button>
+    </div>
+
+    <!-- Controls -->
+    <div class="p-4 flex-1 overflow-y-auto space-y-6">
+      
+      <!-- Interaction Mode -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Interaction Mode</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="mode-navigate" class="mode-btn active">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+            Navigate
+          </button>
+          <button id="mode-add" class="mode-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add Pin
+          </button>
+        </div>
+        <p id="mode-hint" class="text-[11px] text-slate-500 mt-2">Click and drag map to navigate.</p>
+      </div>
+
+      <!-- Visibility Filters -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Layer Visibility</label>
+        <div class="space-y-2">
+          <label class="filter-checkbox">
+            <input type="checkbox" id="filter-public" checked />
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>Public Community Markers</span>
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" id="filter-private" checked />
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            <span>Private User Markers</span>
+          </label>
+          <label class="filter-checkbox">
+            <input type="checkbox" id="filter-disaster" checked />
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <span>Crowdsourced Crisis (Auto-Decay)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Marker Directory -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Markers</label>
+          <span id="waypoint-count" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">0</span>
+        </div>
+        <div id="waypoint-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated via app.js -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status Footer -->
+    <div class="p-3 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-500 flex justify-between">
+      <span>OpenStreetMap GIS</span>
+      <span id="network-status" class="text-emerald-400 flex items-center gap-1">
+        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span> Online
+      </span>
+    </div>
+  </aside>
+
+  <!-- Canvas -->
+  <main class="flex-1 relative h-full">
+    <div id="map" class="w-full h-full bg-slate-950"></div>
+
+    <!-- Modal Dialog -->
+    <div id="waypoint-modal" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-xl p-5 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="font-bold text-slate-100 text-base">Create Waypoint</h3>
+          <button id="close-modal-btn" class="text-slate-400 hover:text-slate-200">✕</button>
+        </div>
+
+        <form id="waypoint-form" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Title / Location Name</label>
+            <input type="text" id="wp-title" required placeholder="e.g. Local Bookstore / Road Hazard" class="form-input" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Category</label>
+              <select id="wp-category" class="form-input">
+                <option value="facility">Facility / Shop</option>
+                <option value="hiddengem">Hidden Gem</option>
+                <option value="disaster">Disaster (24h Auto-Decay)</option>
+                <option value="shelter">Shelter / Rest Area</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Access Scope</label>
+              <select id="wp-visibility" class="form-input">
+                <option value="public">Public (Global)</option>
+                <option value="private">Private (Session Only)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Attach Image (Optional)</label>
+            <input type="file" id="wp-image" accept="image/*" class="form-input text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-slate-300 hover:file:bg-slate-700" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Description</label>
+            <textarea id="wp-desc" rows="2" placeholder="Operational details or current status..." class="form-input"></textarea>
+          </div>
+
+          <div class="pt-2 flex justify-end gap-2">
+            <button type="button" id="cancel-modal-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition">
+              Cancel
+            </button>
+            <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold shadow-md transition">
+              Save Marker
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="src/js/config.js"></script>
+  <script src="src/js/storage.js"></script>
+  <script src="src/js/map.js"></script>
+  <script src="src/js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.error('PWA Reg Error:', err));
+    }
+  </script>
+</body>
+</html> 
